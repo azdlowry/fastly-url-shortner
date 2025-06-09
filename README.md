@@ -1,23 +1,61 @@
-# Default Starter Kit for Rust
+# Fastly URL Shortener
 
-[![Deploy to Fastly](https://deploy.edgecompute.app/button)](https://deploy.edgecompute.app/deploy)
-
-Get to know the Fastly Compute environment with a basic starter that demonstrates routing, simple synthetic responses and code comments that cover common patterns.
-
-**For more details about this and other starter kits for Compute, see the [Fastly Documentation Hub](https://www.fastly.com/documentation/solutions/starters/)**.
+A simple, serverless URL shortener running on [Fastly Compute@Edge](https://www.fastly.com/products/compute-at-edge).
 
 ## Features
 
-- Allow only requests with particular HTTP methods
-- Match request URL path and methods for routing
-- Build synthetic responses at the edge
+- Shorten long URLs to easy-to-share links
+- Fast, global edge delivery
+- No backend server required
 
-## Understanding the code
+## Getting Started
 
-This starter is intentionally lightweight, and requires no dependencies aside from the [`fastly`](https://docs.rs/fastly) crate. It will help you understand the basics of processing requests at the edge using Fastly. This starter includes implementations of common patterns explained in our [using Compute](https://www.fastly.com/documentation/guides/compute/rust/) and [VCL migration](https://www.fastly.com/documentation/guides/compute/migrate/) guides.
+### Prerequisites
 
-The starter doesn't require the use of any backends. Once deployed, you will have a Fastly service running on Compute that can generate synthetic responses at the edge.
+- [Fastly account](https://developer.fastly.com/)
+- [Fastly CLI](https://developer.fastly.com/reference/cli/)
+- [Rust toolchain](https://www.rust-lang.org/tools/install) (if building from source)
 
-## Security issues
+### Deploy
 
-Please see [SECURITY.md](SECURITY.md) for guidance on reporting security-related issues.
+1. Clone this repository:
+    ```sh
+    git clone https://github.com/yourusername/fastly-url-shortener.git
+    cd fastly-url-shortener
+    ```
+
+2. Build and deploy to Fastly:
+    ```sh
+    fastly compute deploy
+    ```
+
+3. Follow the CLI prompts to complete deployment.
+
+
+## Configuration
+
+- Update environment variables or Fastly service settings as needed.
+
+## License
+
+MIT License
+
+Copyright (c) 2025 Andy Lowry
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
