@@ -146,6 +146,7 @@ dependencies = [
  "fastly",
  "log",
  "log-fastly",
+ "serde",
 ]
 
 [[package]]
