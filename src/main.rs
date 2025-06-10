@@ -3,6 +3,7 @@
 use fastly::http::header::CACHE_CONTROL;
 use fastly::http::{header, Method, StatusCode};
 use fastly::{mime, Error, Request, Response};
+use log;
 
 /// The entry point for your application.
 ///
@@ -19,6 +20,8 @@ fn main(req: Request) -> Result<Response, Error> {
         std::env::var("FASTLY_SERVICE_VERSION").unwrap_or_else(|_| String::new())
     );
 
+    log_fastly::init_simple("my_endpoint", log::LevelFilter::Warn);
+
     // Filter request methods...
     match req.get_method() {
         // Block requests with unexpected methods
@@ -34,50 +37,43 @@ fn main(req: Request) -> Result<Response, Error> {
 
     // Pattern match on the path...
     match req.get_path() {
-        // If request is to the `/` path...
         "/" => {
-            // Below are some common patterns for Compute services using Rust.
-            // Head to https://developer.fastly.com/learning/compute/rust/ to discover more.
-
-            // Create a new request.
-            // let mut bereq = Request::get("http://httpbin.org/headers")
-            //     .with_header("X-Custom-Header", "Welcome to Compute!")
-            //     .with_ttl(60);
-
-            // Add request headers.
-            // bereq.set_header(
-            //     "X-Another-Custom-Header",
-            //     "Recommended reading: https://developer.fastly.com/learning/compute",
-            // );
-
-            // Forward the request to a backend.
-            // let mut beresp = bereq.send("backend_name")?;
-
-            // Remove response headers.
-            // beresp.remove_header("X-Another-Custom-Header");
-
-            // Log to a Fastly endpoint.
-            // use std::io::Write;
-            // let mut endpoint = fastly::log::Endpoint::from_name("my_endpoint");
-            // writeln!(endpoint, "Hello from the edge!").unwrap();
-
-            // Send a default synthetic response.
             Ok(Response::from_status(StatusCode::OK)
                 .with_content_type(mime::TEXT_HTML_UTF_8)
                 .with_body(include_str!("welcome-to-compute.html")))
         }
 
-        "/abc123" => {
-            Ok(Response::from_status(StatusCode::PERMANENT_REDIRECT)
-                .with_header(header::LOCATION, "https://rustmanchester.co.uk/")
-                .with_header(header::CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate")
-                .with_header(header::PRAGMA, "no-cache")
-                .with_header(header::EXPIRES, "0")
-                .with_body_text_plain("You have been redirected to the root path.\n"))
+        path if path.len() == 7 && path.chars().skip(1).all(|c| c.is_ascii_alphanumeric()) => {
+            let key = &path[1..7];
+            redirect(key)
         }
 
         // Catch all other requests and return a 404.
         _ => Ok(Response::from_status(StatusCode::NOT_FOUND)
             .with_body_text_plain("The page you requested could not be found\n")),
     }
+}
+
+fn redirect(key: &str) -> Result<Response, Error> {
+    let store = fastly::kv_store::KVStore::open("shortner")?.expect("KVStore not found");
+
+    let mut response = store.lookup(key)?;
+
+    let path = response.take_body().into_string();
+
+    log::info!(
+        "Redirecting to {} for key {}",
+        path,
+        key
+    );
+
+    Ok(Response::from_status(StatusCode::PERMANENT_REDIRECT)
+        .with_header(header::LOCATION, path)
+        .with_header(
+            CACHE_CONTROL,
+            "no-cache, no-store, max-age=0, must-revalidate",
+        )
+        .with_header(header::PRAGMA, "no-cache")
+        .with_header(header::EXPIRES, "0")
+        .with_body_text_plain("You have been redirected.\n"))
 }

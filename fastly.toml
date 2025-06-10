@@ -13,3 +13,6 @@ service_id = "tPGpv2OFNA4F2aWIQrMza3"
 
 [scripts]
   build = "cargo build --profile release"
+
+[local_server.kv_stores]
+shortner = { file = './test/data/shortner_kv_store.json', format = 'json' }
