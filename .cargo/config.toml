@@ -3,3 +3,6 @@ target = "wasm32-wasip1"
 
 [term]
 color = "always"
+
+[target.wasm32-wasip1]
+runner = "viceroy run -C fastly.toml -- "

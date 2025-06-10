@@ -31,6 +31,15 @@ A simple, serverless URL shortener running on [Fastly Compute@Edge](https://www.
 
 3. Follow the CLI prompts to complete deployment.
 
+### Unit Testing
+
+- Install bininstall
+- Install nextest
+- Install viceroy
+- Run tests:
+    ```sh
+    cargo nextest run
+    ```
 
 ## Configuration
 

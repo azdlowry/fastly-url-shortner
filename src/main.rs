@@ -22,6 +22,10 @@ fn main(req: Request) -> Result<Response, Error> {
 
     log_fastly::init_simple("my_endpoint", log::LevelFilter::Warn);
 
+    handler(req)
+}
+
+fn handler(req: Request) -> Result<Response, Error> {
     // Filter request methods...
     match req.get_method() {
         // Block requests with unexpected methods
@@ -37,11 +41,9 @@ fn main(req: Request) -> Result<Response, Error> {
 
     // Pattern match on the path...
     match req.get_path() {
-        "/" => {
-            Ok(Response::from_status(StatusCode::OK)
-                .with_content_type(mime::TEXT_HTML_UTF_8)
-                .with_body(include_str!("welcome-to-compute.html")))
-        }
+        "/" => Ok(Response::from_status(StatusCode::OK)
+            .with_content_type(mime::TEXT_HTML_UTF_8)
+            .with_body(include_str!("welcome-to-compute.html"))),
 
         path if path.len() == 7 && path.chars().skip(1).all(|c| c.is_ascii_alphanumeric()) => {
             let key = &path[1..7];
@@ -61,11 +63,7 @@ fn redirect(key: &str) -> Result<Response, Error> {
 
     let path = response.take_body().into_string();
 
-    log::info!(
-        "Redirecting to {} for key {}",
-        path,
-        key
-    );
+    log::info!("Redirecting to {} for key {}", path, key);
 
     Ok(Response::from_status(StatusCode::PERMANENT_REDIRECT)
         .with_header(header::LOCATION, path)
@@ -76,4 +74,23 @@ fn redirect(key: &str) -> Result<Response, Error> {
         .with_header(header::PRAGMA, "no-cache")
         .with_header(header::EXPIRES, "0")
         .with_body_text_plain("You have been redirected.\n"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use fastly::mime::TEXT_PLAIN_UTF_8;
+
+    #[test]
+    fn test_redirect() {
+        let req = fastly::Request::get("http://example.com/abc123");
+        let resp = handler(req).expect("request succeeds");
+        assert_eq!(resp.get_status(), StatusCode::PERMANENT_REDIRECT);
+        assert_eq!(
+            resp.get_header(header::LOCATION).map(|h| h.to_str().ok()),
+            Some(Some("https://rustmanchester.co.uk/"))
+        );
+        assert_eq!(resp.get_content_type(), Some(TEXT_PLAIN_UTF_8));
+        assert_eq!(resp.into_body_str(), "You have been redirected.\n");
+    }
 }
