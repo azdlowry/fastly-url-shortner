@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <title>URL Shortener - Fastly Compute</title>
+    <link
+      rel="icon"
+      href="https://developer.fastly.com/favicon-32x32.png"
+      type="image/png"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+      
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        overflow: hidden;
+      }
+      
+      .header {
+        background: #2c3e50;
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+      
+      .header h1 {
+        font-size: 2rem;
+        margin-bottom: 10px;
+      }
+      
+      .header p {
+        opacity: 0.9;
+        font-size: 1.1rem;
+      }
+      
+      .form-section {
+        padding: 40px;
+      }
+      
+      .form-group {
+        margin-bottom: 20px;
+      }
+      
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #555;
+      }
+      
+      input[type="text"], input[type="url"] {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+      }
+      
+      input[type="text"]:focus, input[type="url"]:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+      
+      .shortcode-input {
+        font-family: 'Monaco', 'Consolas', monospace;
+        text-transform: lowercase;
+      }
+      
+      button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 14px 28px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        width: 100%;
+      }
+      
+      button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+      }
+      
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+      
+      .result {
+        margin-top: 20px;
+        padding: 16px;
+        border-radius: 8px;
+        font-weight: 500;
+      }
+      
+      .result.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      
+      .result.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      
+      .shortened-url {
+        font-family: 'Monaco', 'Consolas', monospace;
+        background: #f8f9fa;
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid #dee2e6;
+        margin-top: 8px;
+        word-break: break-all;
+      }
+      
+      .help-text {
+        font-size: 14px;
+        color: #666;
+        margin-top: 6px;
+      }
+      
+      .powered-by {
+        text-align: center;
+        padding: 20px;
+        background: #f8f9fa;
+        color: #666;
+        font-size: 14px;
+      }
+      
+      .powered-by a {
+        color: #667eea;
+        text-decoration: none;
+      }
+      
+      .shortcode-list-section {
+        padding: 40px;
+        border-top: 1px solid #eee;
+        background: #fafafa;
+      }
+      
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+      }
+      
+      .section-header h2 {
+        color: #2c3e50;
+        font-size: 1.5rem;
+        margin: 0;
+      }
+      
+      .refresh-btn {
+        background: #28a745;
+        padding: 8px 16px;
+        font-size: 14px;
+        width: auto;
+        margin: 0;
+      }
+      
+      .refresh-btn:hover {
+        background: #218838;
+      }
+      
+      .loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        color: #666;
+      }
+      
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+        margin-right: 12px;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      .shortcode-grid {
+        display: grid;
+        gap: 16px;
+      }
+      
+      .shortcode-item {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 20px;
+        transition: box-shadow 0.2s, transform 0.2s;
+      }
+      
+      .shortcode-item:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+      }
+      
+      .shortcode-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      
+      .shortcode-code {
+        font-family: 'Monaco', 'Consolas', monospace;
+        background: #f8f9fa;
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        font-weight: 600;
+      }
+      
+      .shortcode-url {
+        color: #666;
+        word-break: break-all;
+        line-height: 1.4;
+      }
+      
+      .shortcode-url a {
+        color: #667eea;
+        text-decoration: none;
+      }
+      
+      .shortcode-url a:hover {
+        text-decoration: underline;
+      }
+      
+      .shortcode-actions {
+        display: flex;
+        gap: 8px;
+      }
+      
+      .copy-btn, .delete-btn {
+        padding: 4px 8px;
+        font-size: 12px;
+        width: auto;
+        margin: 0;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      
+      .copy-btn {
+        background: #6c757d;
+        color: white;
+      }
+      
+      .copy-btn:hover {
+        background: #5a6268;
+      }
+      
+      .delete-btn {
+        background: #dc3545;
+        color: white;
+      }
+      
+      .delete-btn:hover {
+        background: #c82333;
+      }
+      
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+      }
+      
+      .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 20px;
+        opacity: 0.5;
+      }
+      
+      .empty-state p {
+        margin: 8px 0;
+      }
+      
+      .empty-hint {
+        font-size: 14px;
+        color: #999;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🔗 URL Shortener</h1>
+        <p>Create short URLs powered by Fastly Compute</p>
+      </div>
+      
+      <div class="form-section">
+        <form id="shortenForm">
+          <div class="form-group">
+            <label for="shortcode">Short Code (6 alphanumeric characters)</label>
+            <input 
+              type="text" 
+              id="shortcode" 
+              name="shortcode" 
+              class="shortcode-input"
+              pattern="[a-zA-Z0-9]{6}" 
+              maxlength="6" 
+              required
+              placeholder="abc123"
+            >
+            <div class="help-text">Choose a unique 6-character code (letters and numbers only)</div>
+          </div>
+          
+          <div class="form-group">
+            <label for="url">Target URL</label>
+            <input 
+              type="url" 
+              id="url" 
+              name="url" 
+              required
+              placeholder="https://example.com"
+            >
+            <div class="help-text">The URL where the short link should redirect</div>
+          </div>
+          
+          <button type="submit" id="submitBtn">Create Short URL</button>
+        </form>
+        
+        <div id="result" class="result" style="display: none;"></div>
+      </div>
+      
+      <div class="shortcode-list-section">
+        <div class="section-header">
+          <h2>📋 Current Shortcodes</h2>
+          <button id="refreshBtn" class="refresh-btn">🔄 Refresh</button>
+        </div>
+        
+        <div id="loadingSpinner" class="loading" style="display: none;">
+          <div class="spinner"></div>
+          <span>Loading shortcodes...</span>
+        </div>
+        
+        <div id="shortcodeList" class="shortcode-grid">
+          <!-- Shortcodes will be populated here -->
+        </div>
+        
+        <div id="emptyState" class="empty-state" style="display: none;">
+          <div class="empty-icon">📝</div>
+          <p>No shortcodes created yet</p>
+          <p class="empty-hint">Create your first shortcode using the form above!</p>
+        </div>
+      </div>
+      
+      <div class="powered-by">
+        Powered by <a href="https://developer.fastly.com/compute" target="_blank">Fastly Compute</a>
+      </div>
+    </div>
+
+    <script>
+      document.getElementById('shortenForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const shortcode = document.getElementById('shortcode').value.toLowerCase();
+        const url = document.getElementById('url').value;
+        const submitBtn = document.getElementById('submitBtn');
+        const result = document.getElementById('result');
+        
+        // Validate shortcode format
+        if (!/^[a-z0-9]{6}$/.test(shortcode)) {
+          showResult('Please enter exactly 6 alphanumeric characters for the short code.', 'error');
+          return;
+        }
+        
+        // Disable submit button
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating...';
+        
+        try {
+          const response = await fetch(`/api/shortcodes/${shortcode}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ path: url })
+          });
+          
+          if (response.ok) {
+            const currentDomain = window.location.origin;
+            const shortUrl = `${currentDomain}/${shortcode}`;
+            showResult(
+              `✅ Short URL created successfully!<div class="shortened-url">${shortUrl}</div>`, 
+              'success'
+            );
+            
+            // Reset form
+            document.getElementById('shortenForm').reset();
+          } else {
+            const errorText = await response.text();
+            showResult(`❌ Error: ${errorText}`, 'error');
+          }
+        } catch (error) {
+          showResult(`❌ Network error: ${error.message}`, 'error');
+        } finally {
+          // Re-enable submit button
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Create Short URL';
+        }
+      });
+      
+      function showResult(message, type) {
+        const result = document.getElementById('result');
+        result.innerHTML = message;
+        result.className = `result ${type}`;
+        result.style.display = 'block';
+        
+        // Auto-hide after 10 seconds for success messages
+        if (type === 'success') {
+          setTimeout(() => {
+            result.style.display = 'none';
+          }, 10000);
+        }
+      }
+      
+      // Auto-format shortcode input
+      document.getElementById('shortcode').addEventListener('input', function(e) {
+        e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 6);
+      });
+      
+      // Load shortcodes on page load
+      document.addEventListener('DOMContentLoaded', function() {
+        loadShortcodes();
+      });
+      
+      // Refresh button event listener
+      document.getElementById('refreshBtn').addEventListener('click', function() {
+        loadShortcodes();
+      });
+      
+      // Load shortcodes from API
+      async function loadShortcodes() {
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const shortcodeList = document.getElementById('shortcodeList');
+        const emptyState = document.getElementById('emptyState');
+        const refreshBtn = document.getElementById('refreshBtn');
+        
+        // Show loading state
+        loadingSpinner.style.display = 'flex';
+        shortcodeList.style.display = 'none';
+        emptyState.style.display = 'none';
+        refreshBtn.disabled = true;
+        
+        try {
+          const response = await fetch('/api/shortcodes');
+          
+          if (response.ok) {
+            const data = await response.json();
+            displayShortcodes(data.shortcodes);
+          } else {
+            console.error('Failed to load shortcodes:', response.statusText);
+            showResult('❌ Failed to load shortcodes', 'error');
+          }
+        } catch (error) {
+          console.error('Error loading shortcodes:', error);
+          showResult(`❌ Error loading shortcodes: ${error.message}`, 'error');
+        } finally {
+          // Hide loading state
+          loadingSpinner.style.display = 'none';
+          refreshBtn.disabled = false;
+        }
+      }
+      
+      // Display shortcodes in the UI
+      function displayShortcodes(shortcodes) {
+        const shortcodeList = document.getElementById('shortcodeList');
+        const emptyState = document.getElementById('emptyState');
+        
+        if (shortcodes.length === 0) {
+          shortcodeList.style.display = 'none';
+          emptyState.style.display = 'block';
+          return;
+        }
+        
+        shortcodeList.innerHTML = '';
+        
+        shortcodes.forEach(function(shortcode) {
+          const currentDomain = window.location.origin;
+          const shortUrl = `${currentDomain}/${shortcode.shortcode}`;
+          
+          const shortcodeItem = document.createElement('div');
+          shortcodeItem.className = 'shortcode-item';
+          
+          shortcodeItem.innerHTML = `
+            <div class="shortcode-header">
+              <span class="shortcode-code">${shortcode.shortcode}</span>
+              <div class="shortcode-actions">
+                <button class="copy-btn" onclick="copyToClipboard('${shortUrl}')">
+                  📋 Copy
+                </button>
+                <button class="delete-btn" onclick="deleteShortcode('${shortcode.shortcode}')">
+                  🗑️ Delete
+                </button>
+              </div>
+            </div>
+            <div class="shortcode-url">
+              <a href="${shortcode.url}" target="_blank" title="${shortcode.url}">
+                ${shortcode.url}
+              </a>
+            </div>
+          `;
+          
+          shortcodeList.appendChild(shortcodeItem);
+        });
+        
+        shortcodeList.style.display = 'grid';
+        emptyState.style.display = 'none';
+      }
+      
+      // Copy to clipboard function
+      async function copyToClipboard(text) {
+        try {
+          await navigator.clipboard.writeText(text);
+          showResult('📋 Short URL copied to clipboard!', 'success');
+        } catch (error) {
+          // Fallback for older browsers
+          const textArea = document.createElement('textarea');
+          textArea.value = text;
+          document.body.appendChild(textArea);
+          textArea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textArea);
+          showResult('📋 Short URL copied to clipboard!', 'success');
+        }
+      }
+      
+      // Delete shortcode function
+      async function deleteShortcode(shortcode) {
+        if (!confirm(`Are you sure you want to delete the shortcode "${shortcode}"?`)) {
+          return;
+        }
+        
+        try {
+          const response = await fetch(`/api/shortcodes/${shortcode}`, {
+            method: 'DELETE'
+          });
+          
+          if (response.ok) {
+            showResult(`✅ Shortcode "${shortcode}" deleted successfully!`, 'success');
+            loadShortcodes(); // Refresh the list
+          } else {
+            const errorText = await response.text();
+            showResult(`❌ Error deleting shortcode: ${errorText}`, 'error');
+          }
+        } catch (error) {
+          showResult(`❌ Network error: ${error.message}`, 'error');
+        }
+      }
+      
+      // Refresh shortcode list after successful creation
+      const originalShowResult = showResult;
+      showResult = function(message, type) {
+        originalShowResult(message, type);
+        if (type === 'success' && message.includes('Short URL created successfully')) {
+          // Wait a moment then refresh the list
+          setTimeout(() => {
+            loadShortcodes();
+          }, 500);
+        }
+      };
+    </script>
+  </body>
+</html>

@@ -147,6 +147,7 @@ dependencies = [
  "log",
  "log-fastly",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
